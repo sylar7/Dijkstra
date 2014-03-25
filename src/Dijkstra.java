@@ -1,76 +1,144 @@
-import java.io.*;
 import java.util.*;
+import java.io.*;
+
+class Vertex implements Comparable<Vertex>{
+	private int vertexId;
+	private double minDistance;
+	private Set<Edge> adjacents;
+	boolean visited;
+	
+	public Vertex(int vertexId){
+		this.vertexId = vertexId;
+		minDistance = Double.MAX_VALUE;
+		adjacents = new HashSet<Edge>();
+		visited = false;
+	}
+	
+	public void show(){
+		System.out.print(vertexId);
+	}
+	
+	public void addAdjacents(Edge e){
+		adjacents.add(e);
+	}
+	
+	public Set<Edge> getAdjacents(){
+		return adjacents;
+	}
+	
+	public int getVertexId(){
+		return vertexId;
+	}
+	
+	public double getMinDistance(){
+		return minDistance;
+	}
+	
+	public void setMinDistance(double distance){
+		minDistance = distance;
+	}
+	
+	public boolean isVisited(){
+		return visited;
+	}
+	
+	public void visit(){
+		visited = true;
+	}
+	
+	public void notVisit(){
+		visited = false;
+	}
+	
+	@Override
+	public int compareTo(Vertex o) {
+		// TODO Auto-generated method stub
+		return Double.compare(minDistance, o.minDistance);
+	}
+}
+
+class Edge{
+	int edgeId;
+	Vertex fstVertex;
+	Vertex sndVertex;
+	double weight;
+	
+	public Edge(int edgeId, Vertex fstVertex, Vertex sndVertex, double weight){
+		this.edgeId = edgeId;
+		this.fstVertex = fstVertex;
+		this.sndVertex = sndVertex;
+		this.weight = weight;
+	}
+	
+	public int getEdgeId(){
+		return edgeId;
+	}
+	
+	public Vertex getFstVertex(){
+		return fstVertex;
+	}
+	
+	public Vertex getSndVertex(){
+		return sndVertex;
+	}
+	
+	public double getWeight(){
+		return weight;
+	}
+}
+
+class SPD{
+	private Vertex v;
+	private double distance;
+	public SPD(Vertex v, double distance){
+		this.v = v;
+		this.distance = distance;
+	}
+	public void setSPD(Vertex v, double distance){
+		this.v = v;
+		this.distance = distance;
+	}
+	public void setVertex(Vertex v){
+		this.v = v;
+	}
+	public void setDistance(double distance){
+		this.distance = distance;
+	}
+	public Vertex getVertex(){
+		return v;
+	} 
+	public double getDistance(){
+		return distance;
+	}
+}
 
 class Dijkstra{
-//	define the edge size
-	private static final int EDGESIZE = 7035;
+	private static SPD current;
+	private static Queue<SPD> spd;
+	private static double distance;
 //	define the spatial network
-	private static Edge[] edges = new Edge[EDGESIZE];
-//	define Comparator for Edges
-	private static Comparator<Edge> comp = new Comparator<Edge>(){
+	private static Set<Edge> edges = new HashSet<Edge>();
+	private static Set<Vertex> nodes = new TreeSet<Vertex>(new Comparator<Vertex>(){
 		@Override
-		public int compare(Edge o1, Edge o2) {
-			if (o1.getDistance() < o2.getDistance()){
-				return -1;
-			}else{
-				return 1;
-			}
-		};
-	};
-//	define Comparator for Nodes
-	private static Comparator<Node> compnode = new Comparator<Node>() {
-		
-		@Override
-		public int compare(Node o1, Node o2) {
+		public int compare(Vertex o1, Vertex o2) {
 			// TODO Auto-generated method stub
-			return o1.getNodeId() - o2.getNodeId();
+			return o1.getVertexId() - o2.getVertexId();
 		}
-	};
-//	define point Departure Point
-	private static Point departure;
-//	define point Destination Point
-	private static Point destination;
-//	define Graph
-	private static Graph g;
+	});
 	
+	private static Map<Vertex, Vertex> path = new HashMap<Vertex, Vertex>();
 	
-	public static void main(String args[]){
-		readEdges();
-		writeEdges();
-		g = new Graph();
-		g.init();
-		g.setGraph();
-		for(Node n : g.getNodeSet()){
-			System.out.print(n.getNodeId());
-			if(!n.getAdj().isEmpty()){
-				for(Edge e : n.getAdj()){
-					System.out.println("\t" + e.getEdgeId() + "\t" + e.getFstNode() + "\t" + e.getSndNode() + "\t" + e.getDistance());
-				}
-			}else{
-				System.out.println();
+	public static Vertex getVertex(int id){
+		Vertex result = null;
+		for(Vertex v : nodes){
+			if(v.getVertexId() == id){
+				result = v;
+				break;
 			}
-
 		}
-		getPoints();	
-		readPoints();
+		return result;
 	}
 	
-//	get Point from Input
-	public static void getPoints(){
-		Scanner in = new Scanner(System.in);
-		System.out.println("Please input Departure and Destination Points(separated by space):");
-		departure = new Point(in.nextInt(), in.nextInt(), in.nextDouble());
-		destination = new Point(in.nextInt(), in.nextInt(), in.nextDouble());
-		in.close();
-	}
-	
-//	read points
-	public static void readPoints(){
-		System.out.println(departure.getFstNode() + "\t" + departure.getSndNode() + "\t" +departure.getPosition());
-		System.out.println(destination.getFstNode() + "\t" + destination.getSndNode() + "\t" +destination.getPosition());
-	}
-	
-//	read all the edges
 	public static void readEdges(){
 		String src = "src/spatial_network.txt";
 		File f = new File(src);
@@ -79,19 +147,17 @@ class Dijkstra{
 			String temp = null;
 			StringTokenizer st = null;
 			int edgeId;
-			int fstNode;
-			int sndNode;
-			double distance;
-			int n = 0;
+			Vertex fstVertex = null;
+			Vertex sndVertex = null;
+			double weight;
 			while((temp = br.readLine()) != null){
 				st = new StringTokenizer(temp);
 				edgeId = Integer.parseInt(st.nextToken());
-				fstNode = Integer.parseInt(st.nextToken());
-				sndNode = Integer.parseInt(st.nextToken());
-				distance = Double.parseDouble(st.nextToken());
-				Edge edge = new Edge(edgeId, fstNode, sndNode, distance);
-				edges[n] = edge;
-				n++;
+				fstVertex = new Vertex(Integer.parseInt(st.nextToken()));
+				sndVertex = new Vertex(Integer.parseInt(st.nextToken()));
+				weight = Double.parseDouble(st.nextToken());
+				Edge edge = new Edge(edgeId, fstVertex, sndVertex, weight);
+				edges.add(edge);
 			}
 			br.close();
 		}catch(IOException e){
@@ -99,149 +165,160 @@ class Dijkstra{
 		}
 	}
 	
-//	write all the edges
-	public static void writeEdges(){
-		for(int n = 0; n < EDGESIZE; n++){
-			writeEdge(n);
+	public static void readNodes(){
+		for(Edge e : edges){
+			nodes.add(e.getFstVertex());
+			nodes.add(e.getSndVertex());
 		}
 	}
 	
-//	write one specific edge
-	public static void writeEdge(int n){
-		Edge wedge = edges[n];
-		System.out.println(wedge.getEdgeId() + "\t" + wedge.getFstNode() + "\t" + wedge.getSndNode() + "\t" + wedge.getDistance());
-		
-	}
-	
-//	define method Dijkstra
-//	public static void Dijkstra(int source, int target){
-//		
-//	}
-	
-//	define class Edge
-	public static class Edge{
-		private int edgeId;
-		private int fstNode;
-		private int sndNode;
-		private double distance;
-		
-		public Edge(int edgeId, int fstNode, int sndNode, double distance){
-			this.edgeId = edgeId;
-			this.fstNode = fstNode;
-			this.sndNode = sndNode;
-			this.distance = distance;
-		}
-		
-		public int getEdgeId(){
-			return edgeId;
-		}
-		
-		public int getFstNode(){
-			return fstNode;
-		}
-		
-		public int getSndNode(){
-			return sndNode;
-		}
-		
-		public double getDistance(){
-			return distance;
-		}
-		
-	}
-	
-//	define class Node
-	public static class Node {
-		private int NodeId;
-		private Boolean visited = null;
-		private Set<Edge> adj;
-		
-		public Node(int NodeId){
-			this.NodeId = NodeId;
-			this.adj = new TreeSet<Edge>(comp);
-		}
-		
-		public void addAdj(Edge adjEdge){
-			adj.add(adjEdge);
-		}
-		
-		public int getNodeId(){
-			return NodeId;
-		}
-		
-		public Set<Edge> getAdj(){
-			return adj;
-		}
-		
-		public Boolean isVisited(){
-			return visited;
-		}
-		
-		public void visit(){
-			visited = true;
-		}
-	}
-	
-//	define class Graph
-	public static class Graph{
-		private Set<Node> nodeSet = null;
-		
-		public Graph(){
-			nodeSet = new TreeSet<Node>(compnode);
-		}
-		
-		public Set<Node> getNodeSet(){
-			return nodeSet;
-		}
-		
-		public void init(){
-			for (int i = 0; i < EDGESIZE; i++){
-				Edge e = edges[i];
-				Node n1 = new Node(e.getFstNode());
-				Node n2 = new Node(e.getSndNode());
-				nodeSet.add(n1);
-				nodeSet.add(n2);
+	public static void setNodes(){
+		for(Edge e : edges){
+			for(Vertex n:nodes){
+				if(n.getVertexId() == e.getFstVertex().getVertexId()){
+					n.getAdjacents().add(e);
+				}
+				if(n.getVertexId() == e.getSndVertex().getVertexId()){
+					n.getAdjacents().add(e);
+				}
 			}
 		}
+	}
+	
+//	write all the edges
+	public static void writeEdges(){
+		for(Edge e : edges){
+			System.out.println(e.getEdgeId() + "\t" + e.getFstVertex().getVertexId() + "\t" + e.getSndVertex().getVertexId() + "\t" + e.getWeight());
+		}
+	}
+	
+	public static double getMinDistance(){
+		return distance;
+	}
+	
+	public static void find(Vertex sour, Vertex dest){
+		SPD temp = null;
+		for(Vertex v : nodes){
+			v.notVisit();
+		}
+		sour.visit();
+	
+		spd = new PriorityQueue<SPD>(1 , new Comparator<SPD>() {
+			@Override
+			public int compare(SPD o1, SPD o2) {
+				// TODO Auto-generated method stub
+				if(o1.getDistance() < o2.getDistance()){
+					return -1;
+				}
+				else{
+					return 1;
+				}
+			}
+		});
+		sour.setMinDistance(0.0);
+		temp = new SPD(sour, 0.0);
+		spd.add(temp);
+		path.put(sour, sour);
+		
+//		check if the Queue is empty
+		while(!spd.isEmpty()){
+//			get first object from Queue
+			current = spd.poll();
+			
+			Vertex v = current.getVertex();
+			distance = current.getDistance();
 
-		public void setGraph(){
-			for (int i = 0; i < EDGESIZE; i++){
-				Edge e = edges[i];
-				Iterator<Node> it = nodeSet.iterator();
-				while(it.hasNext()){
-					Node n = (Node)it.next();
-					if(n.getNodeId() == e.getFstNode()){
-						n.addAdj(e);
-					}
-					if(n.getNodeId() == e.getSndNode()){
-						n.addAdj(e);
+//			mark the node as visited
+			v.visit();
+
+//			check if the node is destination
+			if(v.getVertexId() == dest.getVertexId()){
+				System.out.println("Find!");
+				break;
+			}
+			
+			else{
+//				find every neighbor of this node
+				for(Edge e : v.getAdjacents()){
+					Vertex u = (e.getFstVertex().getVertexId() == v.getVertexId()) ? getVertex(e.getSndVertex().getVertexId()) : getVertex(e.getFstVertex().getVertexId());
+					if(!u.isVisited()){
+						path.put(u, v);
+//						if neighbor node is not visited, mark as visited
+						if(u.getMinDistance() > v.getMinDistance() + e.getWeight()){
+							u.setMinDistance(v.getMinDistance() + e.getWeight());
+							spd.add(new SPD(u, u.getMinDistance()));
+						}
+						u.visit();
+					}else{
+						if(u.getMinDistance() > v.getMinDistance() + e.getWeight()){
+							u.setMinDistance(v.getMinDistance() + e.getWeight());
+							spd.add(new SPD(u, u.getMinDistance()));
+						}
+						for(SPD a : spd){
+							if(a.getVertex().getVertexId() == u.getVertexId()){
+								if(u.getMinDistance() < a.getDistance()){
+									a.setDistance(u.getMinDistance());
+									path.put(u, v);
+								}
+							}
+						}	
 					}
 				}
 			}
 		}
 	}
 	
-//	define class Point
-	public static class Point{
-		private int fstNode;
-		private int sndNode;
-		private double position;
+	public static LinkedList<Vertex> getPath(Vertex target, Vertex source) {
+	    LinkedList<Vertex> pathinfo = new LinkedList<Vertex>();
+	    Vertex step = target;
+	    // check if a path exists
+
+	    if (path.get(step) == null) {
+	      return null;
+	    }
+	    
+	    pathinfo.add(step);
+	    while (path.get(step) != null && step != source) {
+	      step = path.get(step);
+	      pathinfo.add(step);
+	    }
+	    // Put it into the correct order
+	    Collections.reverse(pathinfo);
+	    return pathinfo;
+	  }
+
+	public static void main(String arg[]){
+		readEdges();
+		readNodes();
+		setNodes();
+	
 		
-		public Point(int fstNode, int sndNode, double position){
-			this.fstNode = fstNode; 
-			this.sndNode = sndNode;
-			this.position = position;
+		Vertex v1 = null;
+		Vertex v2 = null;
+		
+		for(Vertex v: nodes){
+			if(v.getVertexId() == 0){
+				v1 = v;
+			}
+		}
+		for(Vertex v: nodes){
+			if(v.getVertexId() == 6000){
+				v2 = v;
+			}
 		}
 		
-		public int getFstNode(){
-			return fstNode;
-		}
+		find(v1, v2);
 		
-		public int getSndNode(){
-			return sndNode;
-		}
-		public double getPosition(){
-			return position;
+		System.out.println("The shortest path distance is:");
+		System.out.println(getMinDistance());
+
+		List<Vertex> pathinfo = new LinkedList<>();
+		pathinfo = getPath(v2, v1);
+		System.out.println("The path is:");
+		for(Vertex v:pathinfo){
+			v.show();
+			System.out.print("\t");
 		}
 	}
+
 }
