@@ -1,6 +1,30 @@
 import java.util.*;
 import java.io.*;
 
+//define class Point
+class Point{
+	private Vertex fstVertex;
+	private Vertex sndVertex;
+	private double position;
+	
+	public Point(Vertex fstVertex, Vertex sndVertex, double position){
+		this.fstVertex = fstVertex; 
+		this.sndVertex = sndVertex;
+		this.position = position;
+	}
+	
+	public Vertex getFstVertex(){
+		return fstVertex;
+	}
+	
+	public Vertex getSndVertex(){
+		return sndVertex;
+	}
+	public double getPosition(){
+		return position;
+	}
+}
+
 class Vertex implements Comparable<Vertex>{
 	private int vertexId;
 	private double minDistance;
@@ -15,7 +39,9 @@ class Vertex implements Comparable<Vertex>{
 	}
 	
 	public void show(){
-		System.out.print(vertexId);
+//		if(vertexId <= 6105){
+			System.out.print(vertexId);
+//		}
 	}
 	
 	public void addAdjacents(Edge e){
@@ -113,9 +139,14 @@ class SPD{
 }
 
 class Dijkstra{
+	private static int NODESIZE;
+	private static Point departure;
+	private static Point destination;
 	private static SPD current;
 	private static Queue<SPD> spd;
 	private static double distance;
+	private static Vertex depa;
+	private static Vertex dest;
 //	define the spatial network
 	private static Set<Edge> edges = new HashSet<Edge>();
 	private static Set<Vertex> nodes = new TreeSet<Vertex>(new Comparator<Vertex>(){
@@ -170,6 +201,7 @@ class Dijkstra{
 			nodes.add(e.getFstVertex());
 			nodes.add(e.getSndVertex());
 		}
+		NODESIZE = nodes.size();
 	}
 	
 	public static void setNodes(){
@@ -286,38 +318,87 @@ class Dijkstra{
 	    Collections.reverse(pathinfo);
 	    return pathinfo;
 	  }
-
+	
+	public static void getPoints(){
+		Scanner in = new Scanner(System.in);
+		System.out.println("Please input Departure and Destination Points(separated by space):");
+		departure = new Point(new Vertex(in.nextInt()), new Vertex(in.nextInt()), in.nextDouble());
+		destination = new Point(new Vertex(in.nextInt()), new Vertex(in.nextInt()), in.nextDouble());
+		in.close();
+	}
+	
+	public static void modifyGraph(Point p1, Point p2){
+		Vertex v1 = p1.getFstVertex();
+		Vertex v2 = p1.getSndVertex();
+		double position1 = p1.getPosition();
+		Vertex v3 = p2.getFstVertex();
+		Vertex v4 = p2.getSndVertex();
+		double position2 = p2.getPosition();
+		for(Edge e:edges){
+			if((e.getFstVertex().getVertexId() == v1.getVertexId()) && (e.getSndVertex().getVertexId() == v2.getVertexId())){
+				if((e.getWeight() == position1) || (e.getWeight() == 0)){
+					if((e.getWeight() == position1)){
+						depa = e.getSndVertex();
+					}
+					else if(position1 == 0){
+						depa = e.getFstVertex();
+					}
+				}else{
+					Vertex sour = new Vertex(nodes.size());
+					Edge e1 = new Edge(edges.size(), v1, sour, position1);
+					edges.add(e1);
+					Edge e2 = new Edge(edges.size(), sour, v2, e.getWeight() - position1);
+					edges.add(e2);
+					nodes.add(sour);
+					edges.remove(e);
+					depa = sour;
+				}
+				break;
+			}
+		}
+		for(Edge e:edges){
+			if((e.getFstVertex().getVertexId() == v3.getVertexId()) && (e.getSndVertex().getVertexId() == v4.getVertexId())){
+				if((e.getWeight() == position2) || (e.getWeight() == 0)){
+					if((e.getWeight() == position2)){
+						dest = e.getSndVertex();
+					}
+					else if(position2 == 0){
+						System.out.println("AAAAA");
+						dest = e.getFstVertex();
+					}
+				}else{
+					Vertex res = new Vertex(nodes.size());
+					Edge e1 = new Edge(edges.size(), v3, res, position2);
+					edges.add(e1);
+					Edge e2 = new Edge(edges.size(), res, v4, e.getWeight() - position2);
+					edges.add(e2);
+					nodes.add(res);
+					edges.remove(e);
+					dest = res;
+				}
+				break;
+			}
+		}
+	}
+	
 	public static void main(String arg[]){
 		readEdges();
 		readNodes();
+		
+		getPoints();
+		modifyGraph(departure, destination);
 		setNodes();
-	
-		
-		Vertex v1 = null;
-		Vertex v2 = null;
-		
-		for(Vertex v: nodes){
-			if(v.getVertexId() == 0){
-				v1 = v;
-			}
-		}
-		for(Vertex v: nodes){
-			if(v.getVertexId() == 6000){
-				v2 = v;
-			}
-		}
-		
-		find(v1, v2);
-		
+		find(depa, dest);
 		System.out.println("The shortest path distance is:");
 		System.out.println(getMinDistance());
-
 		List<Vertex> pathinfo = new LinkedList<>();
-		pathinfo = getPath(v2, v1);
+		pathinfo = getPath(dest, depa);
 		System.out.println("The path is:");
 		for(Vertex v:pathinfo){
-			v.show();
-			System.out.print("\t");
+			if(v.getVertexId() < NODESIZE){
+				v.show();
+				System.out.print("\t");
+			}
 		}
 	}
 
